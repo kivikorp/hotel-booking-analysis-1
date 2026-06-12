@@ -11,7 +11,7 @@ from telegram.ext import (
     ConversationHandler,
 )
 
-TOKEN = os.getenv("TELEGRAM_TOKEN", "YOUR_BOT_TOKEN_HERE")
+TOKEN = os.getenv("TELEGRAM_TOKEN", "7984580376:AAGXzVhb2U_M9AbTvoSITlVw0Bm9bB17_Bg")
 API_URL = "https://hotel-booking-analysis-1.onrender.com/bookings/"
 STREAMLIT_URL = "https://your-streamlit-url.streamlit.app"
 
