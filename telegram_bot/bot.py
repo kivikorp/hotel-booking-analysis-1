@@ -4,8 +4,8 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("TELEGRAM_TOKEN", "7984580376:AAGXzVhb2U_M9AbTvoSITlVw0Bm9bB17_Bg")
-API_URL = "https://hotel-booking-analysis-1.onrender.com/bookings/"
-STREAMLIT_URL = "https://your-streamlit-url.streamlit.app"
+API_URL = "https://hotel-booking-analysis-1.onrender.com"
+STREAMLIT_URL = "https://hotel-booking-analysis-1-fuqscrvruww9ugsiqn2fmm.streamlit.app/"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
