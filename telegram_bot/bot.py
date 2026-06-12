@@ -3,93 +3,53 @@ import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-TOKEN = os.getenv("TELEGRAM_TOKEN", "YOUR_BOT_TOKEN_HERE")
+TOKEN = os.getenv("TELEGRAM_TOKEN", "7984580376:AAGXzVhb2U_M9AbTvoSITlVw0Bm9bB17_Bg")
 API_URL = "https://hotel-booking-analysis-1.onrender.com/bookings/"
 STREAMLIT_URL = "https://your-streamlit-url.streamlit.app"
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Main Menu Page"""
     keyboard = [
-        [
-            InlineKeyboardButton(
-                "📊 View Project Notebook (Streamlit)", url=STREAMLIT_URL
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "📄 Page 1: Fetch Latest Bookings (GET)", callback_data="menu_get"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "➕ Page 2: Add Sample Booking (POST)", callback_data="menu_post"
-            )
-        ],
+        [InlineKeyboardButton("📊 View Project Notebook (Streamlit)", url=STREAMLIT_URL)],
+        [InlineKeyboardButton("📄 Page 1: Fetch Latest Bookings (GET)", callback_data='menu_get')],
+        [InlineKeyboardButton("➕ Page 2: Add Sample Booking (POST)", callback_data='menu_post')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "🏨 *Hotel Booking Data Center*\nUse the menu below to navigate the project features:",
+        '🏨 *Hotel Booking Data Center*\nUse the menu below to navigate the project features:', 
         reply_markup=reply_markup,
-        parse_mode="Markdown",
+        parse_mode='Markdown'
     )
 
-
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles all menu clicks"""
     query = update.callback_query
     await query.answer()
-
-    # Return to main menu button
-    back_button = [
-        [InlineKeyboardButton("🔙 Back to Main Menu", callback_data="menu_main")]
-    ]
-
-    if query.data == "menu_main":
+    
+    back_button = [[InlineKeyboardButton("🔙 Back to Main Menu", callback_data='menu_main')]]
+    
+    if query.data == 'menu_main':
         keyboard = [
-            [
-                InlineKeyboardButton(
-                    "📊 View Project Notebook (Streamlit)", url=STREAMLIT_URL
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "📄 Page 1: Fetch Latest Bookings (GET)", callback_data="menu_get"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "➕ Page 2: Add Sample Booking (POST)", callback_data="menu_post"
-                )
-            ],
+            [InlineKeyboardButton("📊 View Project Notebook (Streamlit)", url=STREAMLIT_URL)],
+            [InlineKeyboardButton("📄 Page 1: Fetch Latest Bookings (GET)", callback_data='menu_get')],
+            [InlineKeyboardButton("➕ Page 2: Add Sample Booking (POST)", callback_data='menu_post')]
         ]
-        await query.edit_message_text(
-            "🏨 *Hotel Booking Data Center*\nChoose an option:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="Markdown",
-        )
+        await query.edit_message_text('🏨 *Hotel Booking Data Center*\nChoose an option:', reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
 
-    elif query.data == "menu_get":
+    elif query.data == 'menu_get':
         try:
             response = requests.get(f"{API_URL}?limit=2")
             if response.status_code == 200:
                 data = response.json()
                 text = f"**Latest 2 Records from API:**\n\n"
                 for i, row in enumerate(data):
-                    text += f"Record {i + 1}: {row['hotel']}, Lead Time: {row['lead_time']}, ADR: ${row.get('adr', 0)}\n"
+                    text += f"Record {i+1}: {row['hotel']}, Lead Time: {row['lead_time']}, ADR: ${row.get('adr', 0)}\n"
             else:
                 text = "Error fetching data from API."
+                text = "API is currently offline or unreachable."
         except Exception:
-            text = "API is currently offline or unreachable."
-        await query.edit_message_text(
-            text=text,
-            reply_markup=InlineKeyboardMarkup(back_button),
-            parse_mode="Markdown",
-        )
+        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(back_button), parse_mode='Markdown')
 
-    elif query.data == "menu_post":
+    elif query.data == 'menu_post':
         try:
-            # Submitting a POST request with payload
             payload = {"hotel": "City Hotel", "lead_time": 45, "adr": 150.0}
             response = requests.post(API_URL, json=payload)
             if response.status_code == 200:
@@ -98,10 +58,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 text = "❌ Failed to add booking."
         except Exception:
             text = "API is currently offline or unreachable."
-        await query.edit_message_text(
-            text=text, reply_markup=InlineKeyboardMarkup(back_button)
-        )
-
+        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(back_button))
 
 def main() -> None:
     application = Application.builder().token(TOKEN).build()
@@ -109,6 +66,5 @@ def main() -> None:
     application.add_handler(CallbackQueryHandler(button_handler))
     application.run_polling()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

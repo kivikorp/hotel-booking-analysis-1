@@ -5,13 +5,9 @@ import pandas as pd
 st.set_page_config(page_title="API Operations", layout="wide")
 st.title("API Operations")
 
-# The live URL for your Render deployment
-API_URL = "https://hotel-booking-analysis-1.onrender.com/bookings/"
+API_URL = "https://hotel-booking-analysis-1.onrender.com"
 
 st.header("1. Submit a New Booking (POST)")
-st.markdown(
-    "Use this form to send a new booking record to the live API. Internal system fields (such as Average Daily Rate and Cancellation Status) are handled automatically by the payload to simulate a real-world frontend."
-)
 
 with st.form("booking_form"):
     col1, col2, col3 = st.columns(3)
@@ -35,8 +31,6 @@ with st.form("booking_form"):
     submitted = st.form_submit_button("Submit Booking to API")
 
     if submitted:
-        # Construct payload with user inputs
-        # System variables like 'adr' and 'is_canceled' are hardcoded safely behind the scenes
         payload = {
             "hotel": hotel,
             "is_canceled": 0,
@@ -53,22 +47,15 @@ with st.form("booking_form"):
         try:
             response = requests.post(API_URL, json=payload)
             if response.status_code == 200:
-                st.success(
-                    "Successfully added new booking! The extended and cleaned datasets have been updated on the server."
-                )
+                st.success("Successfully added new booking!")
             else:
                 st.error(f"Failed to submit. Status code: {response.status_code}")
         except Exception:
-            st.error(
-                "Could not connect to the API. Please ensure the backend is running."
-            )
+            st.error("Could not connect to the API.")
 
 st.divider()
 
 st.header("2. View Recent Bookings (GET)")
-st.markdown(
-    "Retrieve the latest records directly from the extended dataset via the API."
-)
 
 col_a, col_b = st.columns([1, 4])
 with col_a:
@@ -84,8 +71,6 @@ if fetch_button:
             data = response.json()
             if data:
                 df_api = pd.DataFrame(data)
-
-                # Filter out the internal columns to keep the UI clean and readable
                 display_cols = [
                     "hotel",
                     "lead_time",
@@ -96,15 +81,13 @@ if fetch_button:
                     "total_of_special_requests",
                 ]
                 available_cols = [col for col in display_cols if col in df_api.columns]
-
                 st.dataframe(
                     df_api[available_cols] if available_cols else df_api,
                     use_container_width=True,
                 )
-                st.info("Data fetched successfully from the live REST API.")
             else:
                 st.warning("No records found.")
         else:
             st.error("Failed to fetch data from the API.")
     except Exception:
-        st.error("Could not connect to the API. Please ensure the backend is running.")
+        st.error("Could not connect to the API.")
