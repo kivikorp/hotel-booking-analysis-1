@@ -11,7 +11,6 @@ from telegram.ext import (
     ConversationHandler,
 )
 
-# Replace with your actual Telegram token
 TOKEN = os.getenv("TELEGRAM_TOKEN", "7984580376:AAGXzVhb2U_M9AbTvoSITlVw0Bm9bB17_Bg")
 API_URL = "https://hotel-booking-analysis-1.onrender.com"
 STREAMLIT_URL = "https://hotel-booking-analysis-1-fuqscrvruww9ugsiqn2fmm.streamlit.app/"
