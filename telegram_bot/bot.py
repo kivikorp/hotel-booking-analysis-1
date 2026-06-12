@@ -11,15 +11,16 @@ from telegram.ext import (
     ConversationHandler,
 )
 
+# Replace with your actual Telegram token
 TOKEN = os.getenv("TELEGRAM_TOKEN", "7984580376:AAGXzVhb2U_M9AbTvoSITlVw0Bm9bB17_Bg")
-API_URL = "https://hotel-booking-analysis-1.onrender.com/bookings/"
-STREAMLIT_URL = "https://your-streamlit-url.streamlit.app"
+API_URL = "https://hotel-booking-analysis-1.onrender.com"
+STREAMLIT_URL = "https://hotel-booking-analysis-1-fuqscrvruww9ugsiqn2fmm.streamlit.app/"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
 }
 
-HOTEL_STATE, LEAD_TIME_STATE = range(2)
+HOTEL_STATE, LEAD_TIME_STATE, GET_LIMIT_STATE = range(3)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -62,27 +63,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return await start(update, context)
 
     elif query.data == "menu_get":
-        try:
-            response = requests.get(f"{API_URL}?limit=2", headers=HEADERS)
-            if response.status_code == 200:
-                data = response.json()
-                text = f"**Latest 2 Records from API:**\n\n"
-                for i, row in enumerate(data):
-                    text += f"Record {i + 1}: {row['hotel']}, Lead Time: {row['lead_time']}, ADR: ${row.get('adr', 0)}\n"
-            else:
-                text = f"Error fetching data. Code: {response.status_code}"
-        except Exception as e:
-            text = f"API offline. Error: {e}"
-
-        back_button = [
-            [InlineKeyboardButton("🔙 Back to Main Menu", callback_data="menu_main")]
-        ]
         await query.edit_message_text(
-            text=text,
-            reply_markup=InlineKeyboardMarkup(back_button),
+            "How many records would you like to fetch?\n\nType a number between **1** and **20**:",
             parse_mode="Markdown",
         )
-        return ConversationHandler.END
+        return GET_LIMIT_STATE
 
     elif query.data == "menu_post":
         await query.edit_message_text(
@@ -90,6 +75,40 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             parse_mode="Markdown",
         )
         return HOTEL_STATE
+
+
+async def get_limit_step(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    try:
+        limit = int(update.message.text)
+        if limit < 1 or limit > 30:
+            await update.message.reply_text("Please enter a number between 1 and 30:")
+            return GET_LIMIT_STATE
+    except ValueError:
+        await update.message.reply_text("Please enter a valid number (e.g., 5):")
+        return GET_LIMIT_STATE
+
+    try:
+        response = requests.get(f"{API_URL}?limit={limit}", headers=HEADERS)
+        if response.status_code == 200:
+            data = response.json()
+            if not data:
+                text = "No records found in the dataset."
+            else:
+                text = f"**Latest {limit} Records from API:**\n\n"
+                for i, row in enumerate(data):
+                    text += f"Record {i + 1}: {row['hotel']}, Lead Time: {row['lead_time']}, ADR: ${row.get('adr', 0)}\n"
+        else:
+            text = f"Error fetching data. Code: {response.status_code}"
+    except Exception as e:
+        text = f"API offline. Error: {e}"
+
+    keyboard = [
+        [InlineKeyboardButton("🔙 Back to Main Menu", callback_data="menu_main")]
+    ]
+    await update.message.reply_text(
+        text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown"
+    )
+    return ConversationHandler.END
 
 
 async def hotel_step(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -140,12 +159,11 @@ async def lead_time_step(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text(
         text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown"
     )
-
     return ConversationHandler.END
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Custom booking canceled.")
+    await update.message.reply_text("Action canceled.")
     return ConversationHandler.END
 
 
@@ -161,6 +179,9 @@ def main() -> None:
             HOTEL_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, hotel_step)],
             LEAD_TIME_STATE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, lead_time_step)
+            ],
+            GET_LIMIT_STATE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, get_limit_step)
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
