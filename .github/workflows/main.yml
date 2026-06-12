@@ -1,0 +1,36 @@
+name: Hotel Booking CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -r requirements.txt
+          
+      - name: Verify Environment and Run Streamlit tests
+        run: |
+          # Source the uv virtual environment
+          source .venv/bin/activate
+          # Quick syntax check of Streamlit app
+          python -m py_compile Home.py
+          python -m py_compile src/main.py
