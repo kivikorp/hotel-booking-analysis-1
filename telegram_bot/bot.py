@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 
 TOKEN = os.getenv("TELEGRAM_TOKEN", "7984580376:AAGXzVhb2U_M9AbTvoSITlVw0Bm9bB17_Bg")
-API_URL = "https://hotel-booking-analysis-1.onrender.com"
+API_URL = "https://hotel-booking-analysis-1.onrender.com/bookings/"
 STREAMLIT_URL = "https://hotel-booking-analysis-1-fuqscrvruww9ugsiqn2fmm.streamlit.app/"
 
 HEADERS = {
