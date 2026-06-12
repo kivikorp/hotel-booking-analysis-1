@@ -4,8 +4,12 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("TELEGRAM_TOKEN", "7984580376:AAGXzVhb2U_M9AbTvoSITlVw0Bm9bB17_Bg")
-API_URL = "https://hotel-booking-analysis-1.onrender.com"
-STREAMLIT_URL = "https://hotel-booking-analysis-1-fuqscrvruww9ugsiqn2fmm.streamlit.app/"
+API_URL = "https://hotel-booking-analysis-1.onrender.com/bookings/"
+STREAMLIT_URL = "https://your-streamlit-url.streamlit.app"
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+}
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -68,16 +72,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     elif query.data == "menu_get":
         try:
-            response = requests.get(f"{API_URL}?limit=2")
+            # We pass the fake browser headers here
+            response = requests.get(f"{API_URL}?limit=2", headers=HEADERS)
             if response.status_code == 200:
                 data = response.json()
                 text = f"**Latest 2 Records from API:**\n\n"
                 for i, row in enumerate(data):
                     text += f"Record {i + 1}: {row['hotel']}, Lead Time: {row['lead_time']}, ADR: ${row.get('adr', 0)}\n"
             else:
-                text = "Error fetching data from API."
-        except Exception:
-            text = "API is currently offline or unreachable."
+                text = f"Error fetching data from API. Server returned code: {response.status_code}"
+        except Exception as e:
+            text = f"API is currently offline or unreachable. Error: {e}"
 
         await query.edit_message_text(
             text=text,
@@ -88,13 +93,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     elif query.data == "menu_post":
         try:
             payload = {"hotel": "City Hotel", "lead_time": 45, "adr": 150.0}
-            response = requests.post(API_URL, json=payload)
+            response = requests.post(API_URL, json=payload, headers=HEADERS)
             if response.status_code == 200:
                 text = "✅ Successfully added new booking via POST!\n\nThe Cleaned CSV and Extended CSV have both been updated."
             else:
-                text = "❌ Failed to add booking."
-        except Exception:
-            text = "API is currently offline or unreachable."
+                text = f"❌ Failed to add booking. Server returned code: {response.status_code}"
+        except Exception as e:
+            text = f"API is currently offline or unreachable. Error: {e}"
 
         await query.edit_message_text(
             text=text, reply_markup=InlineKeyboardMarkup(back_button)
