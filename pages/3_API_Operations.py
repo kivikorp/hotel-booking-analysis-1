@@ -7,6 +7,10 @@ st.title("API Operations")
 
 API_URL = "https://hotel-booking-analysis-1.onrender.com"
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+}
+
 st.header("1. Submit a New Booking (POST)")
 
 with st.form("booking_form"):
@@ -45,7 +49,7 @@ with st.form("booking_form"):
         }
 
         try:
-            response = requests.post(API_URL, json=payload)
+            response = requests.post(API_URL, json=payload, headers=HEADERS)
             if response.status_code == 200:
                 st.success("Successfully added new booking!")
             else:
@@ -66,7 +70,7 @@ with col_a:
 
 if fetch_button:
     try:
-        response = requests.get(f"{API_URL}?limit={fetch_limit}")
+        response = requests.get(f"{API_URL}?limit={fetch_limit}", headers=HEADERS)
         if response.status_code == 200:
             data = response.json()
             if data:
