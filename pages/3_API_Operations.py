@@ -4,7 +4,7 @@ import pandas as pd
 
 st.set_page_config(page_title="API Operations", layout="wide")
 
-st.title("Step 5: REST API Interaction (FastAPI)")
+st.title("REST API Interaction (FastAPI)")
 st.markdown("""
 This page implements direct communication with the FastAPI backend deployed on Render. 
 You can test GET requests with filtering and pagination, as well as submit POST requests to add new records to the dataset.
