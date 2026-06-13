@@ -1,88 +1,112 @@
 import streamlit as st
 import pandas as pd
-import sys
-import os
-
-PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-from src.cleaning import load_raw_data, clean_data
 
 st.set_page_config(page_title="Hotel Booking Analysis", layout="wide")
 
-st.title("Hotel Booking Analysis")
+st.title("Hotel Booking Data Analysis")
 
 st.markdown("""
-### Abstract / Annotation
-This project explores a comprehensive hotel booking dataset containing reservations for both City Hotels and Resort Hotels. The primary objective is to perform data cleanup, visualize key booking trends, and statistically evaluate hypotheses regarding customer behavior. Key metrics analyzed include the length of stay, average daily rate (ADR), lead time, and the impact of special requests and family composition on booking outcomes.
+**Abstract:**
+This project analyzes a dataset of hotel bookings to understand customer behavior, pricing trends, and cancellation factors. By utilizing exploratory data analysis (EDA) and statistical testing, we aim to uncover actionable insights for revenue management and operational staffing.
 
-**Team Contribution:**
-* **Andrew:** Handled everything.
 """)
 
 st.divider()
 
-st.header("1. Dataset Description & Raw Data")
+st.header("1. Dataset Description & Initial Overview")
 st.markdown(
-    "The dataset contains booking information for a city hotel and a resort hotel, including details such as when the booking was made, length of stay, the number of adults, children, and/or babies, and the number of available parking spaces."
+    "Just like in our Jupyter Notebook, our first step is to load the raw dataset and examine its shape and data quality."
 )
 
 
 @st.cache_data
-def get_raw():
-    return load_raw_data()
+def load_raw_data():
+    try:
+        return pd.read_csv("data/raw/hotel_bookings.csv")
+    except FileNotFoundError:
+        return pd.read_csv("data/raw/hotel_bookings_extended.csv")
 
 
-raw_df = get_raw()
-st.write(
-    f"**Initial Dataset Shape:** `{raw_df.shape[0]} rows`, `{raw_df.shape[1]} columns`"
-)
+try:
+    raw_df = load_raw_data()
 
-missing_data = raw_df.isnull().sum()
-missing_data = missing_data[missing_data > 0].sort_values(ascending=False)
-if not missing_data.empty:
-    st.markdown("**Missing Values Identified:**")
-    st.dataframe(missing_data, column_config={"value": "Missing Count"})
+    st.subheader("Raw Data Preview")
+    st.dataframe(raw_df.head(), use_container_width=True)
+
+    col_shape, col_missing = st.columns(2)
+    with col_shape:
+        st.subheader("Dataset Shape")
+        st.info(f"Rows: {raw_df.shape[0]:,} \n\nColumns: {raw_df.shape[1]}")
+
+    with col_missing:
+        st.subheader("Missing Values Report")
+        missing_data = raw_df.isnull().sum()
+        missing_data = missing_data[missing_data > 0]
+        if not missing_data.empty:
+            st.dataframe(missing_data.rename("Null Count"))
+        else:
+            st.success("No missing values detected.")
+
+except Exception as e:
+    st.error(f"Could not load data: {e}")
+    st.stop()
 
 st.divider()
 
 st.header("2. Data Cleanup")
-st.markdown(
-    "To prepare the dataset for analysis, we address the missing values and logical inconsistencies."
+st.markdown("""
+Based on the missing values report and domain logic, we apply the following data cleaning operations:
+1. **Drop high-NaN columns:** The `company` and `agent` columns contain too many missing values to be useful.
+2. **Remove invalid prices:** ADR (Average Daily Rate) cannot be less than or equal to 0.
+3. **Remove ghost bookings:** Bookings where `adults` + `children` + `babies` == 0 are dropped.
+4. **Handle missing categories:** Fill empty `country` values with 'Unknown'.
+""")
+
+with st.expander("🔍 View Python Cleaning Code"):
+    st.code(
+        """
+    clean_df = raw_df.drop(columns=['company', 'agent'], errors='ignore')
+    clean_df = clean_df[clean_df['adr'] > 0]
+    clean_df = clean_df[(clean_df['adults'] + clean_df['children'] + clean_df['babies']) > 0]
+    clean_df['country'] = clean_df['country'].fillna('Unknown')
+    clean_df['children'] = clean_df['children'].fillna(0).astype(int)
+    """,
+        language="python",
+    )
+
+clean_df = raw_df.drop(columns=["company", "agent"], errors="ignore")
+clean_df = clean_df[clean_df["adr"] > 0]
+clean_df = clean_df[
+    (clean_df["adults"] + clean_df["children"] + clean_df["babies"]) > 0
+]
+clean_df["country"] = clean_df["country"].fillna("Unknown")
+clean_df["children"] = clean_df["children"].fillna(0).astype(int)
+
+st.success(
+    f"Data successfully cleaned! New shape: {clean_df.shape[0]:,} rows and {clean_df.shape[1]} columns."
 )
-st.code(
-    """
-# 1. Fill missing 'children' with 0
-# 2. Fill missing 'country' with 'Unknown'
-# 3. Drop columns with excessive missing values ('company', 'agent')
-# 4. Remove duplicate rows
-""",
-    language="python",
-)
-
-
-@st.cache_data
-def get_cleaned():
-    return clean_data(raw_df)
-
-
-clean_df = get_cleaned()
 
 st.divider()
 
 st.header("3. Data Transformation")
 st.markdown(
-    "We engineer three new analytical columns to facilitate our hypothesis testing and visualizations."
+    "We engineer 3 new analytical columns derived from the existing dataset to aid our later hypothesis tests."
 )
-st.code(
-    """
-df['total_nights'] = df['stays_in_weekend_nights'] + df['stays_in_week_nights']
-df['has_children'] = (df['children'] > 0) | (df['babies'] > 0)
-df['has_special_requests'] = df['total_of_special_requests'] > 0
-""",
-    language="python",
-)
+
+with st.expander("🔍 View Python Transformation Code"):
+    st.code(
+        """
+    # 1. Calculate total stay duration
+    clean_df['total_nights'] = clean_df['stays_in_weekend_nights'] + clean_df['stays_in_week_nights']
+    
+    # 2. Boolean flag for families
+    clean_df['has_children'] = (clean_df['children'] > 0) | (clean_df['babies'] > 0)
+    
+    # 3. Boolean flag for demanding customers
+    clean_df['has_special_requests'] = clean_df['total_of_special_requests'] > 0
+    """,
+        language="python",
+    )
 
 clean_df["total_nights"] = (
     clean_df["stays_in_weekend_nights"] + clean_df["stays_in_week_nights"]
@@ -90,20 +114,23 @@ clean_df["total_nights"] = (
 clean_df["has_children"] = (clean_df["children"] > 0) | (clean_df["babies"] > 0)
 clean_df["has_special_requests"] = clean_df["total_of_special_requests"] > 0
 
-st.session_state["df"] = clean_df
+st.subheader("Transformed Dataset Preview")
+st.dataframe(
+    clean_df[
+        ["hotel", "total_nights", "has_children", "has_special_requests", "adr"]
+    ].head(),
+    use_container_width=True,
+)
 
 st.divider()
 
 st.header("4. Descriptive Statistics")
 st.markdown(
-    "Standard descriptive statistics (mean, standard deviation, percentiles) for our key numerical fields."
-)
-st.dataframe(
-    clean_df[
-        ["lead_time", "total_nights", "adr", "total_of_special_requests"]
-    ].describe()
+    "We isolate 4 continuous numerical fields to analyze their central tendencies (Mean, Median) and dispersion (Standard Deviation)."
 )
 
-st.info(
-    "Pipeline complete. Navigate to the next pages using the sidebar for visual and statistical analysis."
-)
+num_cols = ["lead_time", "adr", "stays_in_week_nights", "total_of_special_requests"]
+stats_df = clean_df[num_cols].describe().T
+st.dataframe(stats_df, use_container_width=True)
+
+st.session_state["df"] = clean_df
